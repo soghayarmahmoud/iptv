@@ -1,6 +1,5 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:animated_snack_bar/animated_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' as g;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,7 +18,12 @@ class EposideGrid extends StatefulWidget {
   final String seriesId;
   final String playlistId;
 
-  const EposideGrid({super.key, required this.searchQuery, required this.seriesId , required this.playlistId});
+  const EposideGrid({
+    super.key,
+    required this.searchQuery,
+    required this.seriesId,
+    required this.playlistId,
+  });
 
   @override
   State<EposideGrid> createState() => _EposideGridState();
@@ -34,8 +38,6 @@ class _EposideGridState extends State<EposideGrid> {
     if (width >= 700) return 3;
     return 3;
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -90,50 +92,58 @@ class _EposideGridState extends State<EposideGrid> {
           }
 
           if (widget.searchQuery.isNotEmpty && items.isEmpty) {
-            return  Center(
-              child: Text(S.current.no_episode, style: TextStyle(color: Colors.white)),
+            return Center(
+              child: Text(
+                S.current.no_episode,
+                style: TextStyle(color: Colors.white),
+              ),
             );
           }
-            return BlocListener<GetEposideStreamCubit, GetEposideStreamState>(
+          return BlocListener<GetEposideStreamCubit, GetEposideStreamState>(
             listener: (context, stateOfGetEposides) {
-
               if (stateOfGetEposides is GetEposideStreamLoading) {
                 showDialog(
-                  context: context, 
+                  context: context,
                   barrierDismissible: false,
                   builder: (context) => const Center(
-                    child: CircularProgressIndicator(color: AppColors.yellowColor)
-                  )
+                    child: CircularProgressIndicator(
+                      color: AppColors.yellowColor,
+                    ),
+                  ),
                 );
               }
-              
+
               if (stateOfGetEposides is GetEposideStreamSuccess) {
                 // Close any open dialogs first
                 Navigator.of(context).pop();
-                
-                
 
-                 g.Get.to(
-              () => TvPlayerView(
-                isLive: false,
-                imageUrl: state.seriesDetailResponse.series.info.cover,
-                channelName: state.seriesDetailResponse.series.info.name,
-                streamUrl: stateOfGetEposides.episodeStreamResponse.episode.streamUrl,
-                id: stateOfGetEposides.episodeStreamResponse.episode.id,
-                type: 'episode',
-              ),
-              transition: g.Transition.fade,
-              duration: const Duration(milliseconds: 300),
-            );
+                g.Get.to(
+                  () => TvPlayerView(
+                    isLive: false,
+                    imageUrl: state.seriesDetailResponse.series.info.cover,
+                    channelName: state.seriesDetailResponse.series.info.name,
+                    streamUrl: stateOfGetEposides
+                        .episodeStreamResponse
+                        .episode
+                        .streamUrl,
+                    id: stateOfGetEposides.episodeStreamResponse.episode.id,
+                    type: 'episode',
+                  ),
+                  transition: g.Transition.fade,
+                  duration: const Duration(milliseconds: 300),
+                );
               }
-              
+
               if (stateOfGetEposides is GetEposideStreamError) {
                 // Close any open dialogs first
                 Navigator.of(context).pop();
-                
-              CustomSnackBar().showCustomSnackBar(context: context, message: 'An error occurred', type: AnimatedSnackBarType.error);
+
+                CustomSnackBar().showCustomSnackBar(
+                  context: context,
+                  message: 'An error occurred',
+                  type: SnackBarType.error,
+                );
               }
-              
             },
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -155,12 +165,13 @@ class _EposideGridState extends State<EposideGrid> {
                     : 'https://via.placeholder.com/300x450.png?text=No+Image';
                 return InkWell(
                   onTap: () {
-                    context.read<GetEposideStreamCubit>().getEposideStream(widget.seriesId, item.id , widget.playlistId);
+                    context.read<GetEposideStreamCubit>().getEposideStream(
+                      widget.seriesId,
+                      item.id,
+                      widget.playlistId,
+                    );
                   },
-                  child: MovieCard(
-                    title: title,
-                    imageUrl: imageUrl,
-                  ),
+                  child: MovieCard(title: title, imageUrl: imageUrl),
                 );
               },
             ),

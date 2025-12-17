@@ -1,4 +1,3 @@
-import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,11 +13,12 @@ import 'package:iptv/featuers/splash/presentation/views/splash_view.dart';
 import 'package:iptv/featuers/start/presentation/manager/auth_cubit/auth_cubit.dart';
 import 'package:iptv/generated/l10n.dart';
 import 'package:media_kit/media_kit.dart';
+import 'core/widgets/remote_key_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
-  
+
   // Initialize CacheHelper for favorites and other cached data
   await CacheHelper.init();
 
@@ -31,18 +31,15 @@ void main() async {
   // Set immersive mode to prevent orientation issues
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(
-    DevicePreview(
-      enabled: false,
-      builder: (context) => MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (context) => AuthCubit()),
-          BlocProvider(create: (context) => GetMovieStreamCubit()),
-          BlocProvider(create: (context) => ChangePasswordCubit()),
-          BlocProvider(create: (context) => GetIptvCategoriesCubit()),
-          BlocProvider(create: (context) => GetIptvChannelsCubit()),
-        ],
-        child: const MyApp(),
-      ),
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => AuthCubit()),
+        BlocProvider(create: (context) => GetMovieStreamCubit()),
+        BlocProvider(create: (context) => ChangePasswordCubit()),
+        BlocProvider(create: (context) => GetIptvCategoriesCubit()),
+        BlocProvider(create: (context) => GetIptvChannelsCubit()),
+      ],
+      child: const RemoteKeyHandler(child: MyApp()),
     ),
   );
 }
@@ -61,8 +58,6 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: S.delegate.supportedLocales,
       debugShowCheckedModeBanner: false,
-      useInheritedMediaQuery: true,
-      builder: DevicePreview.appBuilder,
       locale: isDeviceLanguageArabic() ? Locale('ar') : Locale('en'),
       home: const SplashView(),
     );

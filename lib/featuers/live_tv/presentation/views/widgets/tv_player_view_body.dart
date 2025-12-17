@@ -54,7 +54,7 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
 
   Future<void> _initPlayer(String url, bool isLive) async {
     if (_isInitializing) return;
-    
+
     setState(() {
       _isInitializing = true;
       _error = null;
@@ -74,7 +74,8 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
         Uri.parse(url),
         formatHint: isHls ? VideoFormat.hls : VideoFormat.other,
         httpHeaders: {
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
+          'User-Agent':
+              'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
           'Accept': '*/*',
           'Connection': 'keep-alive',
           'Accept-Encoding': 'identity',
@@ -165,9 +166,9 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
                 const SizedBox(height: 16),
                 Text(
                   _error ?? 'Failed to load stream',
-                  style: TextStyles.font14Medium(context).copyWith(
-                    color: AppColors.subGreyColor,
-                  ),
+                  style: TextStyles.font14Medium(
+                    context,
+                  ).copyWith(color: AppColors.subGreyColor),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -206,7 +207,6 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
 
       // Enter fullscreen after ensuring video is playing
       _scheduleFullscreenEntry();
-
     } on TimeoutException {
       if (mounted) {
         setState(() {
@@ -239,11 +239,11 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
         return;
       }
 
-      if (_videoController != null && 
+      if (_videoController != null &&
           _videoController!.value.isPlaying &&
           _chewieController != null) {
         timer.cancel();
-        
+
         // Additional delay to ensure smooth transition
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted && _chewieController != null) {
@@ -299,9 +299,9 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
   void _handleFullscreenChange() {
     final controller = _chewieController;
     if (controller == null) return;
-    
+
     final bool isFull = controller.isFullScreen;
-    
+
     if (_wasFullscreen && !isFull) {
       // User exited fullscreen - maintain landscape orientation until navigation completes
       SystemChrome.setPreferredOrientations(const [
@@ -313,7 +313,7 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
         }
       });
     }
-    
+
     _wasFullscreen = isFull;
   }
 
@@ -321,15 +321,14 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
   void dispose() {
     _chewieController?.exitFullScreen();
     _disposeControllers();
-    
+
     // Restore default orientations and UI mode
     SystemChrome.setPreferredOrientations(const [
-
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    
+
     super.dispose();
   }
 
@@ -358,9 +357,9 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
                         padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Text(
                           S.current.be_ready,
-                          style: TextStyles.font14Medium(context).copyWith(
-                            color: AppColors.subGreyColor,
-                          ),
+                          style: TextStyles.font14Medium(
+                            context,
+                          ).copyWith(color: AppColors.subGreyColor),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -378,9 +377,9 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
                       else
                         Text(
                           'Max retries reached',
-                          style: TextStyles.font14Medium(context).copyWith(
-                            color: AppColors.subGreyColor,
-                          ),
+                          style: TextStyles.font14Medium(
+                            context,
+                          ).copyWith(color: AppColors.subGreyColor),
                         ),
                       const SizedBox(height: 16),
                       TextButton(
@@ -389,9 +388,9 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
                         },
                         child: Text(
                           S.current.return_back,
-                          style: TextStyles.font14Medium(context).copyWith(
-                            color: AppColors.yellowColor,
-                          ),
+                          style: TextStyles.font14Medium(
+                            context,
+                          ).copyWith(color: AppColors.yellowColor),
                         ),
                       ),
                     ],
@@ -411,17 +410,73 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
                       const SizedBox(height: 16),
                       Text(
                         '${S.current.loading} ${widget.channelName}',
-                        style: TextStyles.font14Medium(context).copyWith(
-                          color: AppColors.subGreyColor,
-                        ),
+                        style: TextStyles.font14Medium(
+                          context,
+                        ).copyWith(color: AppColors.subGreyColor),
                       ),
                     ],
                   ),
                 );
               }
 
-              // Show player
-              return Chewie(controller: _chewieController!);
+              // Show player with remote key handlers
+              return Focus(
+                autofocus: true,
+                onKeyEvent: (node, event) {
+                  final key = event.logicalKey;
+                  // Play/Pause
+                  if (key == LogicalKeyboardKey.mediaPlayPause ||
+                      key == LogicalKeyboardKey.select ||
+                      key == LogicalKeyboardKey.enter ||
+                      key == LogicalKeyboardKey.space) {
+                    if (_videoController != null) {
+                      if (_videoController!.value.isPlaying) {
+                        _videoController!.pause();
+                      } else {
+                        _videoController!.play();
+                      }
+                      return KeyEventResult.handled;
+                    }
+                  }
+
+                  // Seek right
+                  if (key == LogicalKeyboardKey.arrowRight) {
+                    if (_videoController != null) {
+                      final pos = _videoController!.value.position;
+                      _videoController!.seekTo(
+                        pos + const Duration(seconds: 10),
+                      );
+                      return KeyEventResult.handled;
+                    }
+                  }
+
+                  // Seek left
+                  if (key == LogicalKeyboardKey.arrowLeft) {
+                    if (_videoController != null) {
+                      final pos = _videoController!.value.position;
+                      final newPos = pos - const Duration(seconds: 10);
+                      _videoController!.seekTo(
+                        newPos >= Duration.zero ? newPos : Duration.zero,
+                      );
+                      return KeyEventResult.handled;
+                    }
+                  }
+
+                  // Back / Exit fullscreen
+                  if (key == LogicalKeyboardKey.escape ||
+                      key == LogicalKeyboardKey.goBack) {
+                    if (_chewieController != null &&
+                        _chewieController!.isFullScreen) {
+                      _chewieController!.exitFullScreen();
+                      return KeyEventResult.handled;
+                    }
+                    Navigator.maybePop(context);
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: Chewie(controller: _chewieController!),
+              );
             },
           ),
         ),
@@ -429,3 +484,4 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
     );
   }
 }
+

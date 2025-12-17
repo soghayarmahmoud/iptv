@@ -1,6 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, prefer_final_fields
 
-import 'package:animated_snack_bar/animated_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -182,7 +181,7 @@ class _StartViewBodyState extends State<StartViewBody> {
                               CustomSnackBar().showCustomSnackBar(
                                 context: context,
                                 message: state.error,
-                                type: AnimatedSnackBarType.error,
+                                type: SnackBarType.error,
                               );
                             }
                           },

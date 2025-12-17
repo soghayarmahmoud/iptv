@@ -1,4 +1,3 @@
-import 'package:animated_snack_bar/animated_snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +9,6 @@ import 'package:iptv/featuers/live_tv/presentation/views/tv_player_view.dart';
 import 'package:iptv/featuers/movies/presentation/manager/get_movie_stream/get_movie_stream_cubit.dart';
 import 'package:iptv/featuers/movies/presentation/manager/get_movies/get_movies_cubit.dart';
 import 'package:iptv/featuers/movies/presentation/manager/get_movies_category/get_movies_category_cubit.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
 class FavShowViews extends StatefulWidget {
   const FavShowViews({super.key});
@@ -57,11 +55,28 @@ class _FavShowViewsState extends State<FavShowViews> {
             );
           }
           if (state is GetMovieStreamError) {
-            CustomSnackBar().showCustomSnackBar(context: context, message: state.message, type: AnimatedSnackBarType.error);
+            CustomSnackBar().showCustomSnackBar(
+              context: context,
+              message: state.message,
+              type: SnackBarType.error,
+            );
           }
         },
         builder: (context, state) {
-          return ModalProgressHUD(inAsyncCall: state is GetMovieStreamLoading ,color: Colors.transparent ,progressIndicator: CircularProgressIndicator(color: AppColors.yellowColor,), child: Scaffold(body: FavShowViewsBody()));
+          return Stack(
+            children: [
+              Scaffold(body: FavShowViewsBody()),
+              if (state is GetMovieStreamLoading)
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.yellowColor,
+                    ),
+                  ),
+                ),
+            ],
+          );
         },
       ),
     );

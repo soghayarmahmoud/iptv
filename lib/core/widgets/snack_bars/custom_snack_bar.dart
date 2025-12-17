@@ -1,17 +1,25 @@
-import 'package:animated_snack_bar/animated_snack_bar.dart';
 import 'package:flutter/material.dart';
 
 class CustomSnackBar {
-  showCustomSnackBar(
-      {required BuildContext context,
-      required String message,
-      required AnimatedSnackBarType type}) {
-    AnimatedSnackBar.material(
-      message,
-      type: type,
-      mobileSnackBarPosition: MobileSnackBarPosition.bottom,
-      desktopSnackBarPosition: DesktopSnackBarPosition.bottomCenter,
-      duration: const Duration(seconds: 1),
-    ).show(context);
+  showCustomSnackBar({
+    required BuildContext context,
+    required String message,
+    required SnackBarType type,
+  }) {
+    final backgroundColor = type == SnackBarType.error
+        ? Colors.red
+        : type == SnackBarType.warning
+        ? Colors.orange
+        : Colors.green;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 }
+
+enum SnackBarType { success, error, warning, info }

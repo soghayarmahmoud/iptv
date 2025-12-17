@@ -9,7 +9,7 @@ class MediaTvPlayerViewBody extends StatefulWidget {
   final String channelName;
   final String? streamUrl;
   final bool isLive;
-  
+
   const MediaTvPlayerViewBody({
     super.key,
     required this.channelName,
@@ -26,13 +26,14 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
   late final VideoController _videoController;
   String? _error;
   bool _isInitialized = false;
+  bool _isPlaying = false;
   int _retryCount = 0;
   static const int _maxRetries = 3;
 
   @override
   void initState() {
     super.initState();
-    
+
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -60,12 +61,11 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
       if (mounted) {
         final errorMsg = error.toString();
         // Ignore audio device initialization errors (they don't affect playback)
-        if (!errorMsg.contains('audio device') && 
+        if (!errorMsg.contains('audio device') &&
             !errorMsg.contains('no sound')) {
           setState(() {
             _error = 'Failed to load stream: $errorMsg';
           });
-          
         }
       }
     });
@@ -80,6 +80,15 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
         });
       }
     });
+
+    // Listen to playing state for play/pause toggle
+    _player.stream.playing.listen((playing) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = playing;
+        });
+      }
+    });
   }
 
   Future<void> _initPlayer(String url) async {
@@ -91,15 +100,17 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
     });
 
     try {
-    
-
       await _player.open(
-        Media(url, httpHeaders: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-          'Referer': 'https://api.beeplayer1.com/',
-          'Origin': 'https://api.beeplayer1.com',
-          'Accept': '*/*',
-        }),
+        Media(
+          url,
+          httpHeaders: {
+            'User-Agent':
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            'Referer': 'https://api.beeplayer1.com/',
+            'Origin': 'https://api.beeplayer1.com',
+            'Accept': '*/*',
+          },
+        ),
         play: true,
       );
 
@@ -113,7 +124,6 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
         });
       }
     } catch (e) {
-   
       if (mounted) {
         setState(() {
           _error = 'Failed to load stream: ${e.toString()}';
@@ -163,8 +173,9 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
                       _error!,
-                      style: TextStyles.font14Medium(context)
-                          .copyWith(color: AppColors.subGreyColor),
+                      style: TextStyles.font14Medium(
+                        context,
+                      ).copyWith(color: AppColors.subGreyColor),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -174,8 +185,9 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
                       onPressed: _retryPlayer,
                       child: Text(
                         'Retry (${_retryCount + 1}/$_maxRetries)',
-                        style: TextStyles.font14Medium(context)
-                            .copyWith(color: AppColors.yellowColor),
+                        style: TextStyles.font14Medium(
+                          context,
+                        ).copyWith(color: AppColors.yellowColor),
                       ),
                     ),
                   const SizedBox(height: 8),
@@ -183,8 +195,9 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(
                       'Return Back',
-                      style: TextStyles.font14Medium(context)
-                          .copyWith(color: AppColors.yellowColor),
+                      style: TextStyles.font14Medium(
+                        context,
+                      ).copyWith(color: AppColors.yellowColor),
                     ),
                   ),
                 ],
@@ -192,37 +205,69 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
             );
           }
 
-          return Stack(
-            children: [
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 5),
-                  child: Video(
-                    controller: _videoController,
-                    controls: MaterialVideoControls,
-                  ),
-                ),
-              ),
-              if (!_isInitialized)
-                Container(
-                  color: Colors.black,
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.yellowColor,
+          return Focus(
+            autofocus: true,
+            onKeyEvent: (node, event) {
+              final key = event.logicalKey;
+              // Play / Pause toggle
+              if (key == LogicalKeyboardKey.mediaPlayPause ||
+                  key == LogicalKeyboardKey.enter ||
+                  key == LogicalKeyboardKey.select ||
+                  key == LogicalKeyboardKey.space) {
+                if (_isInitialized) {
+                  if (_isPlaying) {
+                    _player.pause();
+                  } else {
+                    _player.play();
+                  }
+                  return KeyEventResult.handled;
+                }
+              }
+
+              // Back
+              if (key == LogicalKeyboardKey.escape ||
+                  key == LogicalKeyboardKey.goBack) {
+                Navigator.maybePop(context);
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: Stack(
+              children: [
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 5),
+                    child: Video(
+                      controller: _videoController,
+                      controls: MaterialVideoControls,
                     ),
                   ),
                 ),
-              Positioned(
-                top: 16,
-                left: 16,
-                child: SafeArea(
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                    onPressed: () => Navigator.of(context).pop(),
+                if (!_isInitialized)
+                  Container(
+                    color: Colors.black,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.yellowColor,
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: SafeArea(
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),

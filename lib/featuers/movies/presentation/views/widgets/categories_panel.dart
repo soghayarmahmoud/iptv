@@ -1,4 +1,3 @@
-
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -10,7 +9,7 @@ import 'package:iptv/featuers/movies/presentation/manager/get_movies/get_movies_
 import 'package:iptv/featuers/movies/presentation/manager/get_movies_category/get_movies_category_cubit.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class CategoriesPanel extends StatelessWidget {
+class CategoriesPanel extends StatefulWidget {
   final String selectedCategory;
   final Function(String) onCategorySelected;
   final String playlistId;
@@ -21,6 +20,13 @@ class CategoriesPanel extends StatelessWidget {
     required this.onCategorySelected,
     required this.playlistId,
   });
+
+  @override
+  State<CategoriesPanel> createState() => _CategoriesPanelState();
+}
+
+class _CategoriesPanelState extends State<CategoriesPanel> {
+  int _focusedIndex = -1;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +41,8 @@ class CategoriesPanel extends StatelessWidget {
           // Always include base categories
           final List<MovieCategory> baseCategories = <MovieCategory>[];
 
-          if (state is GetMoviesCategoryLoading || state is GetMoviesCategoryError) {
+          if (state is GetMoviesCategoryLoading ||
+              state is GetMoviesCategoryError) {
             final placeholders = <MovieCategory>[
               const MovieCategory(id: '', name: 'Loading...', parentId: 0),
               const MovieCategory(id: '', name: 'Please wait...', parentId: 0),
@@ -52,21 +59,26 @@ class CategoriesPanel extends StatelessWidget {
             );
           }
 
-        
-
           if (state is GetMoviesCategorySuccess) {
-            final List<MovieCategory> dynamicCategories = state.movieCategoriesResponse.categories
+            final List<MovieCategory> dynamicCategories = state
+                .movieCategoriesResponse
+                .categories
                 .where((c) => c.name.trim().isNotEmpty)
                 .toList();
 
             // Auto-select and fetch for the first category if current selection is not in the list
-            final bool hasSelection = dynamicCategories.any((c) => c.name == selectedCategory);
+            final bool hasSelection = dynamicCategories.any(
+              (c) => c.name == widget.selectedCategory,
+            );
             if (dynamicCategories.isNotEmpty && !hasSelection) {
               final MovieCategory first = dynamicCategories.first;
               // Defer actions until after this frame to avoid setState in build
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                context.read<GetMoviesCubit>().getMovies(first.id , playlistId);
-                onCategorySelected(first.name);
+                context.read<GetMoviesCubit>().getMovies(
+                  first.id,
+                  widget.playlistId,
+                );
+                widget.onCategorySelected(first.name);
               });
             }
 
@@ -86,33 +98,66 @@ class CategoriesPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoriesList(BuildContext context, List<MovieCategory> categories) {
+  Widget _buildCategoriesList(
+    BuildContext context,
+    List<MovieCategory> categories,
+  ) {
     return ListView.separated(
       itemCount: categories.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.transparent),
+      separatorBuilder: (_, __) =>
+          const Divider(height: 1, color: Colors.transparent),
       itemBuilder: (context, index) {
         final MovieCategory label = categories[index];
-        final bool selected = label.name == selectedCategory;
+        final bool selected = label.name == widget.selectedCategory;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: InkWell(
-            onTap: () {
-              context.read<GetMoviesCubit>().getMovies(label.id , playlistId);
-              onCategorySelected(label.name);
+          child: FocusableActionDetector(
+            onShowFocusHighlight: (focused) {
+              setState(() {
+                _focusedIndex = focused
+                    ? index
+                    : (_focusedIndex == index ? -1 : _focusedIndex);
+              });
             },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                color: selected ? AppColors.mainColorTheme.withOpacity(.6) : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
+            actions: {
+              ActivateIntent: CallbackAction<Intent>(
+                onInvoke: (intent) {
+                  context.read<GetMoviesCubit>().getMovies(
+                    label.id,
+                    widget.playlistId,
+                  );
+                  widget.onCategorySelected(label.name);
+                  return null;
+                },
               ),
-              child: ListTile(
-                title: Text(
-                  label.name,
-                  style: TextStyles.font14Medium(
-                    context,
-                  ).copyWith(color: AppColors.whiteColor),
+            },
+            child: GestureDetector(
+              onTap: () {
+                context.read<GetMoviesCubit>().getMovies(
+                  label.id,
+                  widget.playlistId,
+                );
+                widget.onCategorySelected(label.name);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  color: selected || _focusedIndex == index
+                      ? AppColors.mainColorTheme.withOpacity(.6)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: _focusedIndex == index
+                      ? Border.all(color: AppColors.yellowColor, width: 2)
+                      : null,
+                ),
+                child: ListTile(
+                  title: Text(
+                    label.name,
+                    style: TextStyles.font14Medium(
+                      context,
+                    ).copyWith(color: AppColors.whiteColor),
+                  ),
                 ),
               ),
             ),

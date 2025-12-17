@@ -19,7 +19,8 @@ class HistoryViewBody extends StatefulWidget {
   State<HistoryViewBody> createState() => _HistoryViewBodyState();
 }
 
-class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProviderStateMixin {
+class _HistoryViewBodyState extends State<HistoryViewBody>
+    with SingleTickerProviderStateMixin {
   late final HistoryService _historyService;
   late TabController _tabController;
   List<HistoryItem> _allHistory = [];
@@ -27,6 +28,7 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
   List<HistoryItem> _movieHistory = [];
   List<HistoryItem> _episodeHistory = [];
   bool _isLoading = true;
+  int _focusedIndex = -1;
 
   @override
   void initState() {
@@ -34,7 +36,6 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
     _historyService = HistoryService(CacheHelper.instance);
     _tabController = TabController(length: 4, vsync: this);
     _loadHistory();
-
   }
 
   @override
@@ -45,12 +46,12 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
 
   Future<void> _loadHistory() async {
     setState(() => _isLoading = true);
-    
+
     final history = await _historyService.getHistory();
     final liveTv = await _historyService.getHistoryByType('live_tv');
     final movies = await _historyService.getHistoryByType('movie');
     final episodes = await _historyService.getHistoryByType('episode');
-    
+
     if (mounted) {
       setState(() {
         _allHistory = history;
@@ -74,20 +75,34 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
         backgroundColor: AppColors.secondaryColorTheme,
         title: Text(
           S.current.clear_history,
-          style: TextStyles.font18SemiBold(context).copyWith(color: Colors.white),
+          style: TextStyles.font18SemiBold(
+            context,
+          ).copyWith(color: Colors.white),
         ),
         content: Text(
           S.current.confirm_clear_history,
-          style: TextStyles.font14Regular(context).copyWith(color: Colors.white70),
+          style: TextStyles.font14Regular(
+            context,
+          ).copyWith(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(S.current.cancel, style: TextStyles.font18SemiBold(context).copyWith(color:  Colors.white70)),
+            child: Text(
+              S.current.cancel,
+              style: TextStyles.font18SemiBold(
+                context,
+              ).copyWith(color: Colors.white70),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(S.current.clear, style: TextStyles.font18SemiBold(context).copyWith(color: Colors.red)),
+            child: Text(
+              S.current.clear,
+              style: TextStyles.font18SemiBold(
+                context,
+              ).copyWith(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -100,7 +115,6 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
   }
 
   void _playItem(HistoryItem item) {
-
     g.Get.to(
       () => TvPlayerView(
         channelName: item.name,
@@ -129,11 +143,17 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
     if (difference.inDays > 7) {
       return DateFormat('MMM d, y').format(dateTime);
     } else if (difference.inDays > 0) {
-      return isArabic ? 'منذ ${difference.inDays} يوم' : '${difference.inDays}d ago';
+      return isArabic
+          ? 'منذ ${difference.inDays} يوم'
+          : '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {
-      return isArabic ? 'منذ ${difference.inHours} ساعة' : '${difference.inHours}h ago';
+      return isArabic
+          ? 'منذ ${difference.inHours} ساعة'
+          : '${difference.inHours}h ago';
     } else if (difference.inMinutes > 0) {
-      return isArabic ? 'منذ ${difference.inMinutes} دقيقة' : '${difference.inMinutes}m ago';
+      return isArabic
+          ? 'منذ ${difference.inMinutes} دقيقة'
+          : '${difference.inMinutes}m ago';
     } else {
       return isArabic ? 'الآن' : 'Just now';
     }
@@ -162,7 +182,10 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 15),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 15,
+              ),
               child: Row(
                 children: [
                   InkWell(
@@ -178,11 +201,12 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
                   Expanded(
                     child: Text(
                       S.current.history,
-                      style: TextStyles.font22ExtraBold(context)
-                          .copyWith(color: AppColors.whiteColor),
+                      style: TextStyles.font22ExtraBold(
+                        context,
+                      ).copyWith(color: AppColors.whiteColor),
                     ),
                   ),
-                 
+
                   if (_allHistory.isNotEmpty) const SizedBox(width: 16),
                   if (_allHistory.isNotEmpty)
                     InkWell(
@@ -255,8 +279,9 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
             const SizedBox(height: 16),
             Text(
               S.current.no_history,
-              style: TextStyles.font18SemiBold(context)
-                  .copyWith(color: AppColors.whiteColor.withOpacity(0.6)),
+              style: TextStyles.font18SemiBold(
+                context,
+              ).copyWith(color: AppColors.whiteColor.withOpacity(0.6)),
             ),
           ],
         ),
@@ -277,95 +302,135 @@ class _HistoryViewBodyState extends State<HistoryViewBody> with SingleTickerProv
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          return InkWell(
-            onTap: () => _playItem(item),
-            child: Stack(
-              children: [
-                MovieCard(
-                  title: item.type == 'episode'
-                      ? '${item.seriesName ?? ""} - ${item.name}'
-                      : item.name,
-                  imageUrl: item.type == 'live_tv' ? item.channelIcon ?? '' : item.imageUrl,
-                ),
-                // Delete button
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () => _removeHistoryItem(item),
+          return FocusableActionDetector(
+            onShowFocusHighlight: (focused) {
+              setState(() {
+                _focusedIndex = focused
+                    ? index
+                    : (_focusedIndex == index ? -1 : _focusedIndex);
+              });
+            },
+            actions: {
+              ActivateIntent: CallbackAction<Intent>(
+                onInvoke: (intent) {
+                  _playItem(item);
+                  return null;
+                },
+              ),
+            },
+            child: GestureDetector(
+              onTap: () => _playItem(item),
+              child: Stack(
+                children: [
+                  MovieCard(
+                    title: item.type == 'episode'
+                        ? '${item.seriesName ?? ""} - ${item.name}'
+                        : item.name,
+                    imageUrl: item.type == 'live_tv'
+                        ? item.channelIcon ?? ''
+                        : item.imageUrl,
+                  ),
+                  // Delete button
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () => _removeHistoryItem(item),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Type badge
+                  Positioned(
+                    top: 8,
+                    left: 8,
                     child: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        shape: BoxShape.circle,
+                        color: item.type == 'live_tv'
+                            ? Colors.red
+                            : item.type == 'movie'
+                            ? AppColors.yellowColor
+                            : Colors.purple,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 20,
+                      child: Text(
+                        item.type == 'live_tv'
+                            ? 'LIVE'
+                            : item.type == 'movie'
+                            ? 'Movie'
+                            : 'Episode',
+                        style: TextStyles.font12Medium(
+                          context,
+                        ).copyWith(color: Colors.white),
                       ),
                     ),
                   ),
-                ),
-                // Type badge
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: item.type == 'live_tv'
-                          ? Colors.red
-                          : item.type == 'movie'
-                              ? AppColors.yellowColor
-                              : Colors.purple,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      item.type == 'live_tv'
-                          ? 'LIVE'
-                          : item.type == 'movie'
-                              ? 'Movie'
-                              : 'Episode',
-                      style: TextStyles.font12Medium(context)
-                          .copyWith(color: Colors.white),
-                    ),
-                  ),
-                ),
-                // Watched time
-                Positioned(
-                  bottom: 50,
-                  left: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          color: Colors.white70,
-                          size: 12,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            _getTimeAgo(item.watchedAt),
-                            style: TextStyles.font11Regular(context)
-                                .copyWith(color: Colors.white70),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  // Watched time
+                  Positioned(
+                    bottom: 50,
+                    left: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            color: Colors.white70,
+                            size: 12,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              _getTimeAgo(item.watchedAt),
+                              style: TextStyles.font11Regular(
+                                context,
+                              ).copyWith(color: Colors.white70),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  // Focus ring overlay
+                  if (_focusedIndex == index)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.yellowColor,
+                            width: 3,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           );
         },
