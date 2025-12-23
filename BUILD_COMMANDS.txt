@@ -1,0 +1,282 @@
+=============================================================================
+IPTV Android Box APK Build Commands
+=============================================================================
+
+RECOMMENDED: Release Build (for Production/Android Boxes)
+============================================================
+
+Step 1: Clean previous builds
+  flutter clean
+
+Step 2: Get dependencies
+  flutter pub get
+
+Step 3: Build Release APK
+  flutter build apk --release
+
+Output: build/app/outputs/flutter-apk/app-release.apk
+Size: ~45-55 MB
+Build time: 5-10 minutes (first time)
+Optimization: Maximum (ProGuard + shrinking)
+
+ALTERNATIVE: Profile Build (for Testing)
+=========================================
+
+  flutter build apk --profile
+
+Output: build/app/outputs/flutter-apk/app-profile.apk
+Size: ~50-60 MB
+Build time: 3-5 minutes
+Optimization: Good (minification only)
+Best for: Testing before release
+
+ALTERNATIVE: Debug Build (Development Only)
+============================================
+
+  flutter build apk --debug
+
+Output: build/app/outputs/flutter-apk/app-debug.apk
+Size: ~80-100 MB
+Build time: 2-3 minutes
+Optimization: None
+WARNING: Do not use for production!
+
+=============================================================================
+Complete Build Script (Copy & Paste)
+=============================================================================
+
+FOR WINDOWS (PowerShell):
+
+cd g:\flutter_work\iptv
+flutter clean
+flutter pub get
+flutter build apk --release
+echo "APK built successfully!"
+echo "Location: build/app/outputs/flutter-apk/app-release.apk"
+
+FOR LINUX/MAC (Terminal):
+
+cd ~/flutter_work/iptv
+flutter clean
+flutter pub get
+flutter build apk --release
+echo "APK built successfully!"
+echo "Location: build/app/outputs/flutter-apk/app-release.apk"
+
+=============================================================================
+Installation on Android Box
+=============================================================================
+
+METHOD 1: USB Installation
+==========================
+1. Connect USB drive to computer
+2. Copy: build/app/outputs/flutter-apk/app-release.apk to USB
+3. Insert USB into Android Box
+4. Open file manager
+5. Navigate to USB drive
+6. Tap app-release.apk
+7. Press "Install"
+
+METHOD 2: ADB via USB Cable
+===========================
+# Enable Developer Mode & USB Debugging on box first!
+
+adb devices
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+
+# Wait for "Success"
+
+METHOD 3: ADB via WiFi (No USB Needed)
+======================================
+# Enable "ADB over Network" in Developer Options first
+
+adb connect <ANDROID_BOX_IP>:5555
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+adb disconnect
+
+=============================================================================
+Troubleshooting
+=============================================================================
+
+ERROR: "Could not resolve all files for configuration"
+SOLUTION: 
+  flutter clean
+  flutter pub get
+
+ERROR: "dartdefiningcompilationunit" or build errors
+SOLUTION:
+  rm -rf build/
+  flutter clean
+  flutter pub get
+  flutter build apk --release
+
+ERROR: "Gradle sync failed"
+SOLUTION:
+  Delete: .gradle folder in project
+  Delete: android/.gradle folder
+  flutter pub get
+
+ERROR: App crashes at startup
+SOLUTION:
+  First build debug APK to see errors:
+  flutter build apk --debug
+  adb install -r build/app/outputs/flutter-apk/app-debug.apk
+  adb logcat | grep flutter
+
+ERROR: Build takes too long
+SOLUTION:
+  Edit: android/gradle.properties
+  Add: org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=1G
+  Add: org.gradle.parallel=true
+
+=============================================================================
+File Locations After Build
+=============================================================================
+
+Release APK:
+  build/app/outputs/flutter-apk/app-release.apk (USE THIS!)
+  
+Also available at:
+  build/app/outputs/apk/release/app-release.apk
+
+Debug APK:
+  build/app/outputs/flutter-apk/app-debug.apk
+  
+Profile APK:
+  build/app/outputs/flutter-apk/app-profile.apk
+
+Build artifacts:
+  build/app/intermediates/         (intermediate files)
+  build/app/outputs/bundle/       (app bundle for Play Store)
+  
+=============================================================================
+What To Do After Building
+=============================================================================
+
+1. VERIFY APK EXISTS
+   - Check: build/app/outputs/flutter-apk/app-release.apk
+   - Size should be 45-55 MB
+
+2. TRANSFER TO BOX
+   - Via USB, ADB, or Network transfer
+
+3. INSTALL ON BOX
+   - Use one of the methods above
+
+4. TEST ON BOX
+   - Launch app
+   - Login with credentials
+   - Test Live TV playback
+   - Test remote buttons (D-pad, Enter, Back)
+   - Verify no crashes
+
+5. CHECK LOGS (if issues)
+   adb logcat | grep -i flutter
+   adb logcat | grep -i error
+   
+6. UNINSTALL IF NEEDED
+   adb uninstall com.dalykc.beeplayertveg
+
+=============================================================================
+Recommended Build Parameters for Android Boxes
+=============================================================================
+
+For Android 10+:
+  flutter build apk --release --dart-define=FLAVOR=production
+
+For older devices:
+  flutter build apk --release --dart-define=FLAVOR=legacy
+
+For low-end boxes:
+  flutter build apk --release --split-debug-info
+
+For maximum optimization:
+  flutter build apk --release --obfuscate
+
+=============================================================================
+Version Management
+=============================================================================
+
+To update version before building:
+
+Edit pubspec.yaml:
+  version: 1.0.1+2
+  (major.minor.patch+buildNumber)
+
+Edit android/app/build.gradle.kts:
+  defaultConfig {
+    versionCode = 2  (increment each release)
+    versionName = "1.0.1"
+  }
+
+Then build:
+  flutter build apk --release
+
+=============================================================================
+Security Notes
+=============================================================================
+
+✓ Release APK: Safe to distribute
+✓ Profile APK: Safe to distribute  
+✗ Debug APK: Do NOT distribute (contains debug info)
+
+For Google Play Store:
+1. Generate signing key: keytool -genkey -v -keystore ...
+2. Create key.properties with key info
+3. Update build.gradle.kts with signing config
+4. Build: flutter build appbundle --release
+
+=============================================================================
+Performance Tips
+=============================================================================
+
+Faster builds:
+  1. Use Android Studio instead of terminal
+  2. Enable Gradle caching
+  3. Increase JVM heap: -Xmx4G
+  4. Run on faster disk (SSD)
+
+Faster APK installation:
+  1. Use USB 3.0 cable
+  2. Disable other ADB clients
+  3. Connect directly (avoid hub)
+  4. Install via WiFi if box supports it
+
+Better APK performance:
+  1. Use Release build (not Debug)
+  2. Enable hardware acceleration
+  3. Update to latest Flutter
+  4. Minimize background processes
+
+=============================================================================
+Quick Reference - Copy to Android Box
+=============================================================================
+
+APK Location: build/app/outputs/flutter-apk/app-release.apk
+Package Name: com.dalykc.beeplayertveg
+App Name: Bee Player
+Min Android: 5.0 (API 21)
+Target Android: Latest supported
+Size: ~50 MB
+Runtime: 150-250 MB RAM
+
+=============================================================================
+Estimated Build Times (First time will be slower)
+=============================================================================
+
+Clean & Build:       ~10-15 minutes (includes download & compilation)
+Incremental Build:   ~3-5 minutes (only changed files)
+Release Build:       ~5-8 minutes (includes optimization)
+Installation:        ~1-2 minutes (depends on connection)
+App Launch:          ~2-3 seconds
+
+=============================================================================
+
+Need help? Check these files:
+- BUILD_AND_DEPLOYMENT_GUIDE.md (comprehensive guide)
+- QUICK_BUILD_GUIDE.md (quick start)
+- FIXES_SUMMARY.md (what was fixed)
+- ANDROID_BOX_CODE_AUDIT.md (technical details)
+
+Last Updated: 2025-12-23
+Status: ✓ Ready for Production

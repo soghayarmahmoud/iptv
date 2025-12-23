@@ -44,6 +44,18 @@
 # Preserve libraries used by video player plugins
 -keep class com.google.android.exoplayer2.** { *; }
 
+# Preserve Dio HTTP client library and network classes
+-keep class io.flutter.plugins.** { *; }
+-keep class com.google.api.client.** { *; }
+-keep class io.reactivex.** { *; }
+-keep interface io.reactivex.** { *; }
+
+# Preserve JSON serialization
+-keep class com.google.gson.** { *; }
+-keepclassmembernames class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
 # Remove logging in release builds
 -assumenosideeffects class android.util.Log {
     public static *** d(...);

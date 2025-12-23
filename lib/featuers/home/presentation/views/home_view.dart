@@ -7,26 +7,28 @@ class HomeView extends StatefulWidget {
 
   @override
   State<HomeView> createState() => _HomeViewState();
-
-
-  
 }
-
-
 
 class _HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    _setLandscapeOrientation();
   }
+
+  void _setLandscapeOrientation() {
+    try {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('Error setting landscape orientation: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: HomeViewBody(),
-    );
+    return const Scaffold(body: HomeViewBody());
   }
 }

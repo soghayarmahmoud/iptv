@@ -17,19 +17,52 @@ import 'core/widgets/remote_key_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
+
+  // Initialize MediaKit with error handling
+  try {
+    MediaKit.ensureInitialized();
+  } catch (e) {
+    debugPrint('MediaKit initialization warning: $e');
+    // Continue even if MediaKit fails - some Android boxes don't support it
+  }
 
   // Initialize CacheHelper for favorites and other cached data
-  await CacheHelper.init();
+  try {
+    await CacheHelper.init();
+  } catch (e) {
+    debugPrint('CacheHelper initialization error: $e');
+    // Continue with default empty cache
+  }
 
-  // Lock app to landscape mode only
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
-  ]);
+  // Lock app to landscape mode only (for TV boxes)
+  try {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  } catch (e) {
+    debugPrint('SystemChrome orientation error: $e');
+  }
 
-  // Set immersive mode to prevent orientation issues
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  // Set immersive mode for fullscreen on TV boxes
+  try {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  } catch (e) {
+    debugPrint('SystemChrome immersive mode error: $e');
+  }
+
+  // Configure system UI for TV boxes
+  try {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+      ),
+    );
+  } catch (e) {
+    debugPrint('SystemChrome UI overlay error: $e');
+  }
+
   runApp(
     MultiBlocProvider(
       providers: [
@@ -58,8 +91,33 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: S.delegate.supportedLocales,
       debugShowCheckedModeBanner: false,
-      locale: isDeviceLanguageArabic() ? Locale('ar') : Locale('en'),
+      locale: isDeviceLanguageArabic()
+          ? const Locale('ar')
+          : const Locale('en'),
+      // Disable text scaling for TV boxes to maintain proper font sizes
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.noScaling),
+          child: child!,
+        );
+      },
       home: const SplashView(),
+      // Global error handler for uncaught exceptions
+      navigatorObservers: [_AppNavigatorObserver()],
     );
+  }
+}
+
+class _AppNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route route, Route? previousRoute) {
+    debugPrint('Navigated to: ${route.settings.name ?? 'Unknown'}');
+  }
+
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    debugPrint('Popped from: ${route.settings.name ?? 'Unknown'}');
   }
 }

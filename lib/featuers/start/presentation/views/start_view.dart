@@ -13,17 +13,23 @@ class _StartViewState extends State<StartView> {
   @override
   void initState() {
     super.initState();
-    // Switch to landscape after splash is fully replaced
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    _setLandscapeOrientation();
+  }
+
+  void _setLandscapeOrientation() {
+    try {
+      // Switch to landscape after splash is fully replaced
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('Error setting landscape orientation in StartView: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: const StartViewBody(),
-    );
+    return Scaffold(body: const StartViewBody());
   }
 }

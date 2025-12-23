@@ -53,7 +53,7 @@ class MoviesView extends StatelessWidget {
               Scaffold(body: MoviesViewBody(playlistId: playlistId)),
               if (state is GetMovieStreamLoading)
                 Container(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   child: const Center(
                     child: CircularProgressIndicator(
                       color: AppColors.yellowColor,

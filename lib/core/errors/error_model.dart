@@ -11,10 +11,21 @@ class ErrorModel {
   });
 
   factory ErrorModel.jsonData(dynamic jsonData) {
+    String errorMessage = 'An unknown error occurred';
+
+    // Handle different message formats safely
+    if (jsonData != null) {
+      if (jsonData['message'] is List) {
+        errorMessage = (jsonData['message'] as List).join(', ');
+      } else if (jsonData['message'] is String) {
+        errorMessage = jsonData['message'] as String;
+      }
+    }
+
     return ErrorModel(
-      statusCode: jsonData['statusCode'] ?? 0,
-      code: jsonData['error'] ?? 'UNKNOWN_CODE',
-      errorMsg: jsonData['message'] is List ? jsonData['message'].join(', ') : jsonData['message'] ?? 'An unknown error occurred',
+      statusCode: jsonData?['statusCode'] ?? 0,
+      code: jsonData?['error'] ?? 'UNKNOWN_CODE',
+      errorMsg: errorMessage,
     );
   }
 }
