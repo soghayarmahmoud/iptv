@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:iptv/core/services/cache_helper.dart';
 import 'package:iptv/core/utils/g_functions.dart';
+import 'package:iptv/core/utils/memory_manager.dart';
 import 'package:iptv/featuers/live_tv/presentation/manager/get_iptv_categories/get_iptv_categories_cubit.dart';
 import 'package:iptv/featuers/live_tv/presentation/manager/get_iptv_channels/get_iptv_channels_cubit.dart';
 import 'package:iptv/featuers/movies/presentation/manager/get_movie_stream/get_movie_stream_cubit.dart';
@@ -18,37 +19,58 @@ import 'core/widgets/remote_key_handler.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize MediaKit with error handling
+  // TV-SAFE: Initialize MediaKit synchronously BEFORE runApp
   try {
     MediaKit.ensureInitialized();
+    debugPrint('✅ MediaKit initialized successfully');
   } catch (e) {
-    debugPrint('MediaKit initialization warning: $e');
-    // Continue even if MediaKit fails - some Android boxes don't support it
+    debugPrint('⚠️ MediaKit initialization warning: $e');
   }
 
-  // Initialize CacheHelper for favorites and other cached data
+  // Initialize memory manager to detect low-end devices
+  try {
+    await MemoryManager().initialize();
+  } catch (e) {
+    debugPrint('⚠️ MemoryManager initialization error: $e');
+  }
+
+  // Adjust image cache based on device capabilities
+  if (MemoryManager().isLowEndDevice) {
+    debugPrint('🔧 Low-end device detected - reducing cache sizes');
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024;
+    PaintingBinding.instance.imageCache.maximumSize = 50;
+  } else {
+    debugPrint('✅ Normal device - using default cache sizes');
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 100 * 1024 * 1024;
+    PaintingBinding.instance.imageCache.maximumSize = 100;
+  }
+
+  // Initialize CacheHelper synchronously
   try {
     await CacheHelper.init();
+    debugPrint('✅ CacheHelper initialized successfully');
   } catch (e) {
-    debugPrint('CacheHelper initialization error: $e');
-    // Continue with default empty cache
+    debugPrint('⚠️ CacheHelper initialization error: $e');
   }
 
   // Lock app to landscape mode only (for TV boxes)
   try {
-    SystemChrome.setPreferredOrientations([
+    await SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
   } catch (e) {
-    debugPrint('SystemChrome orientation error: $e');
+    debugPrint('⚠️ Orientation lock failed: $e');
   }
 
-  // Set immersive mode for fullscreen on TV boxes
+  // TV-SAFE: Use manual SystemUiMode with no overlays
   try {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    await SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [],
+    );
   } catch (e) {
-    debugPrint('SystemChrome immersive mode error: $e');
+    debugPrint('⚠️ SystemUiMode configuration failed: $e');
   }
 
   // Configure system UI for TV boxes
@@ -60,9 +82,10 @@ void main() async {
       ),
     );
   } catch (e) {
-    debugPrint('SystemChrome UI overlay error: $e');
+    debugPrint('⚠️ SystemUiOverlayStyle configuration failed: $e');
   }
 
+  // Start app IMMEDIATELY with all critical services initialized
   runApp(
     MultiBlocProvider(
       providers: [
@@ -72,7 +95,7 @@ void main() async {
         BlocProvider(create: (context) => GetIptvCategoriesCubit()),
         BlocProvider(create: (context) => GetIptvChannelsCubit()),
       ],
-      child: const RemoteKeyHandler(child: MyApp()),
+      child: const MyApp(),
     ),
   );
 }
@@ -100,24 +123,10 @@ class MyApp extends StatelessWidget {
           data: MediaQuery.of(
             context,
           ).copyWith(textScaler: TextScaler.noScaling),
-          child: child!,
+          child: RemoteKeyHandler(child: child!),
         );
       },
       home: const SplashView(),
-      // Global error handler for uncaught exceptions
-      navigatorObservers: [_AppNavigatorObserver()],
     );
-  }
-}
-
-class _AppNavigatorObserver extends NavigatorObserver {
-  @override
-  void didPush(Route route, Route? previousRoute) {
-    debugPrint('Navigated to: ${route.settings.name ?? 'Unknown'}');
-  }
-
-  @override
-  void didPop(Route route, Route? previousRoute) {
-    debugPrint('Popped from: ${route.settings.name ?? 'Unknown'}');
   }
 }

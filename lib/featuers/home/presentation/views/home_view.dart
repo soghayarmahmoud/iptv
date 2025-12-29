@@ -17,13 +17,15 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _setLandscapeOrientation() {
+    // TV-SAFE: Wrap SystemChrome calls in try-catch to prevent crashes on old APIs
     try {
       SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
       ]);
     } catch (e) {
-      debugPrint('Error setting landscape orientation: $e');
+      debugPrint('⚠️ Failed to set landscape orientation in HomeView: $e');
+      // Continue - app will work in default orientation
     }
   }
 

@@ -18,13 +18,15 @@ class _StartViewState extends State<StartView> {
 
   void _setLandscapeOrientation() {
     try {
-      // Switch to landscape after splash is fully replaced
+      // TV-SAFE: Switch to landscape after splash is fully replaced
+      // Wrap in try-catch to prevent crashes on old APIs
       SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
       ]);
     } catch (e) {
-      debugPrint('Error setting landscape orientation in StartView: $e');
+      debugPrint('⚠️ Error setting landscape orientation in StartView: $e');
+      // Continue - app will work in default orientation
     }
   }
 

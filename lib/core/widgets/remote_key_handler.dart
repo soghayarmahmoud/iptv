@@ -1,10 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Simple global handler that maps some remote keys to app actions.
-class RemoteKeyHandler extends StatelessWidget {
+/// TV-SAFE Remote/D-Pad handler for Android TV boxes.
+/// Fixes:
+/// - Uses persistent FocusNode (not recreated on every build)
+/// - Enables autofocus to receive D-Pad input immediately
+/// - Does NOT block rendering if no remote input occurs
+class RemoteKeyHandler extends StatefulWidget {
   final Widget child;
   const RemoteKeyHandler({super.key, required this.child});
+
+  @override
+  State<RemoteKeyHandler> createState() => _RemoteKeyHandlerState();
+}
+
+class _RemoteKeyHandlerState extends State<RemoteKeyHandler> {
+  // TV-SAFE (FIX #4): Persistent FocusNode - created once, reused across builds
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    // Create persistent FocusNode once
+    _focusNode = FocusNode();
+    _focusNode.requestFocus();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +51,15 @@ class RemoteKeyHandler extends StatelessWidget {
             },
           ),
         },
-        child: Focus(autofocus: true, child: child),
+        // TV-SAFE: FocusScope ensures proper focus tree for D-Pad navigation
+        child: FocusScope(
+          autofocus: true,
+          child: Focus(
+            autofocus: true,
+            focusNode: _focusNode,
+            child: widget.child,
+          ),
+        ),
       ),
     );
   }

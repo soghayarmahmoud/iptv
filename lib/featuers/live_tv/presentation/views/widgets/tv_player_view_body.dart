@@ -45,11 +45,28 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
   }
 
   void _setLandscapeOrientation() {
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // TV-SAFE: Wrap SystemChrome calls in try-catch to prevent crashes on old APIs
+    try {
+      SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('⚠️ Failed to set landscape orientation: $e');
+      // Continue - app will work in default orientation
+    }
+
+    try {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } catch (e) {
+      debugPrint('⚠️ Failed to set immersive mode: $e');
+      // Fallback to manual fullscreen
+      try {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+      } catch (e2) {
+        debugPrint('⚠️ All system UI modes failed: $e2');
+      }
+    }
   }
 
   Future<void> _initPlayer(String url, bool isLive) async {
@@ -303,15 +320,22 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
     final bool isFull = controller.isFullScreen;
 
     if (_wasFullscreen && !isFull) {
-      // User exited fullscreen - maintain landscape orientation until navigation completes
-      SystemChrome.setPreferredOrientations(const [
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]).then((_) {
+      // TV-SAFE: User exited fullscreen - maintain landscape orientation with error handling
+      try {
+        SystemChrome.setPreferredOrientations(const [
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ]).then((_) {
+          if (mounted) {
+            Navigator.of(context).maybePop();
+          }
+        });
+      } catch (e) {
+        debugPrint('⚠️ Failed to set landscape in fullscreen: $e');
         if (mounted) {
           Navigator.of(context).maybePop();
         }
-      });
+      }
     }
 
     _wasFullscreen = isFull;
@@ -322,12 +346,21 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
     _chewieController?.exitFullScreen();
     _disposeControllers();
 
-    // Restore default orientations and UI mode
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // TV-SAFE: Restore default orientations and UI mode with error handling
+    try {
+      SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('⚠️ Failed to restore orientation in dispose: $e');
+    }
+
+    try {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    } catch (e) {
+      debugPrint('⚠️ Failed to restore UI mode in dispose: $e');
+    }
 
     super.dispose();
   }
@@ -484,4 +517,3 @@ class _TvPlayerViewBodyState extends State<TvPlayerViewBody> {
     );
   }
 }
-

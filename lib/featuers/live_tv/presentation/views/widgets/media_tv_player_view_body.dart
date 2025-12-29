@@ -34,10 +34,15 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
   void initState() {
     super.initState();
 
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    // TV-SAFE: Set orientation with error handling
+    try {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('⚠️ Failed to set landscape orientation: $e');
+    }
 
     _player = Player(
       configuration: PlayerConfiguration(
@@ -151,10 +156,15 @@ class _MediaTvPlayerViewBodyState extends State<MediaTvPlayerViewBody> {
   @override
   void dispose() {
     _player.dispose();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    // TV-SAFE: Maintain orientation with error handling
+    try {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('⚠️ Failed to maintain landscape in dispose: $e');
+    }
     super.dispose();
   }
 

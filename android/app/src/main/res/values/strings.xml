@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Bee Player</string>
+    <string name="search_hint">Search channels and content</string>
+    <string name="search_settings_description">Search for IPTV channels and content</string>
+</resources>

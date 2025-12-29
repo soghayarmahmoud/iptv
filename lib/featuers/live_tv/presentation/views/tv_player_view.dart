@@ -14,16 +14,16 @@ class TvPlayerView extends StatefulWidget {
   final String? imageUrl;
   final String? id;
   final String? type;
-  
+
   // For episodes
   final String? seriesId;
   final String? seriesName;
   final String? episodeId;
-  
+
   // For live TV
   final String? channelId;
   final String? channelIcon;
-  
+
   final String? categoryId;
 
   const TvPlayerView({
@@ -37,7 +37,7 @@ class TvPlayerView extends StatefulWidget {
     this.seriesId,
     this.seriesName,
     this.channelIcon,
-    
+
     this.episodeId,
     this.channelId,
     this.categoryId,
@@ -57,34 +57,55 @@ class _TvPlayerViewState extends State<TvPlayerView> {
     _historyService = HistoryService(CacheHelper.instance);
     _startWatchTime = DateTime.now();
     _addToHistory();
-  // Force landscape orientation
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    
+    // TV-SAFE: Force landscape orientation with error handling
+    _setLandscapeOrientation();
   }
 
+  void _setLandscapeOrientation() {
+    try {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('⚠️ Failed to set landscape orientation: $e');
+    }
 
-   @override
+    try {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } catch (e) {
+      debugPrint('⚠️ Failed to set immersive mode: $e');
+      try {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+      } catch (e2) {
+        debugPrint('⚠️ All system UI modes failed: $e2');
+      }
+    }
+  }
+
+  @override
   void dispose() {
-    // Ensure landscape orientation is maintained when navigating back
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // TV-SAFE: Ensure landscape orientation with error handling
+    try {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('⚠️ Failed to maintain landscape in dispose: $e');
+    }
+
+    try {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } catch (e) {
+      debugPrint('⚠️ Failed to maintain immersive mode in dispose: $e');
+    }
     super.dispose();
   }
 
-  
-
-  
-
   Future<void> _addToHistory() async {
     if (widget.streamUrl == null || widget.streamUrl!.isEmpty) return;
-    
+
     final historyItem = HistoryItem(
       id: widget.id ?? widget.streamUrl!,
       name: widget.channelName,

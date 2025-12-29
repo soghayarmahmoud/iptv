@@ -21,12 +21,26 @@ class _FavShowViewsState extends State<FavShowViews> {
   @override
   void initState() {
     super.initState();
-    // Ensure landscape orientation
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // TV-SAFE: Ensure landscape orientation with error handling
+    try {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } catch (e) {
+      debugPrint('⚠️ Failed to set landscape orientation: $e');
+    }
+
+    try {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } catch (e) {
+      debugPrint('⚠️ Failed to set immersive mode: $e');
+      try {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+      } catch (e2) {
+        debugPrint('⚠️ All system UI modes failed: $e2');
+      }
+    }
   }
 
   @override

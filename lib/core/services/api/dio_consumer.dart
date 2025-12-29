@@ -13,6 +13,13 @@ class DioConsumer extends ApiConsumer {
     } else if (dio.options.baseUrl.isEmpty) {
       dio.options.baseUrl = Endpoints.baseUrl;
     }
+
+    // TV-SAFE: Configure connection timeouts to prevent hanging on poor connections
+    // Important for Android TV boxes with unstable network (WiFi/3G)
+    dio.options.connectTimeout = const Duration(seconds: 15);
+    dio.options.receiveTimeout = const Duration(seconds: 20);
+    dio.options.sendTimeout = const Duration(seconds: 15);
+
     dio.interceptors.add(ApiInterceptors());
     dio.interceptors.add(
       LogInterceptor(
@@ -107,6 +114,7 @@ class DioConsumer extends ApiConsumer {
       throw ('Unknown Error');
     }
   }
+
   @override
   Future put(
     String baseUrl, {

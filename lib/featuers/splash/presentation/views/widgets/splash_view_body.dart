@@ -13,106 +13,97 @@ class SplashViewBody extends StatefulWidget {
   State<SplashViewBody> createState() => _SplashViewBodyState();
 }
 
-class _SplashViewBodyState extends State<SplashViewBody>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
+class _SplashViewBodyState extends State<SplashViewBody> {
+  // TV-SAFE: Cache preloaded data for instant navigation
+  String? _cachedToken;
+  bool _cachedRememberMe = false;
+  bool _dataLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    // // Lock orientation to portrait on splash
-    // SystemChrome.setPreferredOrientations([
-    //   DeviceOrientation.portraitUp,
-    // ]);
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    );
+    // Load data immediately
+    _preloadData();
+  }
 
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 0.86).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.slowMiddle),
-    );
+  /// Load both values in PARALLEL
+  Future<void> _preloadData() async {
+    try {
+      final results = await Future.wait<dynamic>([
+        CacheHelper.instance.getData(key: 'rememberMeFlag'),
+        getToken(),
+      ]);
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
-    );
+      _cachedRememberMe = (results[0] is bool) ? results[0] as bool : false;
+      _cachedToken = results[1] as String?;
+      _dataLoaded = true;
 
-    _animationController.forward();
+      debugPrint(
+        '✅ Splash data preloaded: token=${_cachedToken != null}, remember=$_cachedRememberMe',
+      );
 
-    Future.delayed(const Duration(milliseconds: 3500), () async {
-      try {
-        // Safely retrieve user data with null checks
-        final rememberMeData = await CacheHelper.instance.getData(
-          key: 'rememberMeFlag',
-        );
-        final isRememberMe = (rememberMeData is bool) ? rememberMeData : false;
-        final token = await getToken();
-
-        // Check if widget is still mounted before navigation
-        if (!mounted) return;
-
-        // Navigate based on authentication state
-        if (token != null && token.isNotEmpty && isRememberMe) {
-          if (mounted) {
-            g.Get.off(
-              () => const HomeView(),
-              transition: g.Transition.fade,
-              duration: const Duration(milliseconds: 400),
-            );
-          }
-        } else {
-          if (mounted) {
-            g.Get.off(
-              () => const StartView(),
-              transition: g.Transition.fade,
-              duration: const Duration(milliseconds: 400),
-            );
-          }
-        }
-      } catch (e) {
-        // Handle any errors during navigation logic
-        if (mounted) {
-          g.Get.off(
-            () => const StartView(),
-            transition: g.Transition.fade,
-            duration: const Duration(milliseconds: 400),
-          );
-        }
+      // Navigate immediately after data is loaded
+      if (mounted) {
+        _navigateToNextScreen();
       }
-    });
+    } catch (e) {
+      debugPrint('⚠️ Error preloading data: $e');
+      _cachedRememberMe = false;
+      _cachedToken = null;
+      _dataLoaded = true;
+
+      // Navigate with defaults
+      if (mounted) {
+        _navigateToNextScreen();
+      }
+    }
+  }
+
+  /// Navigate using preloaded data (no async calls!)
+  void _navigateToNextScreen() {
+    if (!mounted) return;
+
+    try {
+      // Use cached data - instant navigation!
+      if (_cachedToken != null &&
+          _cachedToken!.isNotEmpty &&
+          _cachedRememberMe) {
+        debugPrint('✅ Navigating to HomeView (authenticated)');
+        g.Get.off(
+          () => const HomeView(),
+          transition: g.Transition.fade,
+          duration: const Duration(milliseconds: 400),
+        );
+      } else {
+        debugPrint('✅ Navigating to StartView (not authenticated)');
+        g.Get.off(
+          () => const StartView(),
+          transition: g.Transition.fade,
+          duration: const Duration(milliseconds: 400),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Navigation error: $e');
+      if (mounted) {
+        g.Get.off(
+          () => const StartView(),
+          transition: g.Transition.fade,
+          duration: const Duration(milliseconds: 400),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
-    // Optional: don't reset here to keep next screens in landscape
-    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Center(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: child,
-                ),
-              );
-            },
-            child: Image.asset(Assets.imagesLogo, width: 300, height: 300),
-          ),
-        ),
-      ],
+    // TV-SAFE: Simple static splash screen with no animations
+    return Center(
+      child: Image.asset(Assets.imagesLogo, width: 300, height: 300),
     );
   }
 }
